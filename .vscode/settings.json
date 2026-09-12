@@ -2,5 +2,6 @@
     "editor.formatOnSave": true,
     "prettier.tabWidth": 4,
     "workbench.colorTheme": "Light 2026",
-    
+    "workbench.activityBar.location": "hidden",
+    "window.zoomLevel": 1.5
 }
