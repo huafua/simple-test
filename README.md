@@ -8,10 +8,10 @@
 
 - **零外部依賴 (Zero Dependencies)**：僅使用 Node.js 內建模組（`http`、`url` 等）構建，極致輕量與安全。
 - **現代 Node.js 特性**：
-  - 使用 **ES Modules** (`import`/`export`)。
-  - 使用原生 `--env-file` 加載 `.env` 配置文件（無需 dotenv 套件）。
-  - 使用原生 `--watch` 實現開發時的熱重載（無需 nodemon）。
-  - 使用原生 `node:test` 與 `node:assert` 進行端到端 (E2E) 測試。
+    - 使用 **ES Modules** (`import`/`export`)。
+    - 使用原生 `--env-file` 加載 `.env` 配置文件（無需 dotenv 套件）。
+    - 使用原生 `--watch` 實現開發時的熱重載（無需 nodemon）。
+    - 使用原生 `node:test` 與 `node:assert` 進行端到端 (E2E) 測試。
 - **VSCode 整合支援**：附帶 `.vscode` 調試配置與 `.http` 測試請求文件。
 
 ---
@@ -63,7 +63,7 @@ PORT=8822
 npm start
 ```
 
-*背後執行的命令：`node --env-file=.env --watch index.js`*
+_背後執行的命令：`node --env-file=.env --watch index.js`_
 
 ---
 
@@ -73,56 +73,56 @@ npm start
 
 ### 加法計算接口
 
-* **路徑**：`/calculate`
-* **方法**：`GET`
-* **查詢參數**：
-  * `a` (必填，整數)：相加的第一個數值
-  * `b` (必填，整數)：相加的第二個數值
+- **路徑**：`/calculate`
+- **方法**：`GET`
+- **查詢參數**：
+    - `a` (必填，整數)：相加的第一個數值
+    - `b` (必填，整數)：相加的第二個數值
 
 #### 示例 1：成功請求
 
-* **請求連結**：`http://localhost:8822/calculate?a=22&b=21`
-* **響應 (JSON)**：
-  ```json
-  {
-    "success": true,
-    "message": "success",
-    "result": 43
-  }
-  ```
+- **請求連結**：`http://localhost:8822/calculate?a=22&b=21`
+- **響應 (JSON)**：
+    ```json
+    {
+        "success": true,
+        "message": "success",
+        "result": 43
+    }
+    ```
 
 #### 示例 2：缺少參數
 
-* **請求連結**：`http://localhost:8822/calculate?b=11`
-* **響應 (JSON)**：
-  ```json
-  {
-    "success": false,
-    "message": "Both a and b are required"
-  }
-  ```
+- **請求連結**：`http://localhost:8822/calculate?b=11`
+- **響應 (JSON)**：
+    ```json
+    {
+        "success": false,
+        "message": "Both a and b are required"
+    }
+    ```
 
 #### 示例 3：參數非數值
 
-* **請求連結**：`http://localhost:8822/calculate?a=1&b=sad`
-* **響應 (JSON)**：
-  ```json
-  {
-    "success": false,
-    "message": "Either a and b is not a number"
-  }
-  ```
+- **請求連結**：`http://localhost:8822/calculate?a=1&b=sad`
+- **響應 (JSON)**：
+    ```json
+    {
+        "success": false,
+        "message": "Either a and b is not a number"
+    }
+    ```
 
 #### 示例 4：無效路由
 
-* **請求連結**：`http://localhost:8822/invalid-route`
-* **響應 (JSON)**：
-  ```json
-  {
-    "success": false,
-    "message": "left undone"
-  }
-  ```
+- **請求連結**：`http://localhost:8822/invalid-route`
+- **響應 (JSON)**：
+    ```json
+    {
+        "success": false,
+        "message": "left undone"
+    }
+    ```
 
 ---
 
@@ -138,7 +138,7 @@ npm start
 npm test
 ```
 
-*背後執行的命令：`node --env-file=.env --test`*
+_背後執行的命令：`node --env-file=.env --test`_
 
 該命令會掃描並運行 `tests/e2e/index.test.js` 中的測試用例，對 `/calculate` 接口的加法邏輯進行驗證。
 

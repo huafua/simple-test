@@ -1,7 +1,11 @@
 {
     "editor.formatOnSave": true,
     "prettier.tabWidth": 4,
-    "workbench.colorTheme": "Light 2026",
+    "workbench.colorTheme": "Dark 2026",
     "workbench.activityBar.location": "hidden",
-    "window.zoomLevel": 1.5
+    "window.zoomLevel": 2,
+    "editor.cursorWidth": 4,
+    "editor.cursorBlinking": "expand",
+    "editor.fontFamily": "Courier New",
+    "markdown.preview.fontFamily": "Courier New"
 }
