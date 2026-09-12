@@ -1,0 +1,7 @@
+{
+  "editor.formatOnSave": true,
+  "workbench.colorTheme": "Dark 2026",
+  "window.zoomLevel": 1.5,
+  "workbench.activityBar.location": "hidden",
+  "prettier.tabWidth": 4
+}

@@ -1,0 +1,16 @@
+@baseUrl=http://localhost:8888/student
+### 
+GET {{baseUrl}}/get_all_students HTTP/1.1
+
+### 
+GET {{baseUrl}}/get_student_by_id?id=STU2026100 HTTP/1.1
+
+###
+GET {{baseUrl}}/get_students_by_age_range?min=15&max=16 HTTP/1.1
+Content-Type: application/json
+
+{"username":"Alice","gender":"female","age":21}
+
+
+### 
+GET {{baseUrl}}/hello HTTP/1.1

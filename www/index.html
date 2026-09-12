@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>學生資訊查詢系統</title>
+    <link rel="stylesheet" href="index.css">
+</head>
+<body>
+    <header id="page-header">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
+            <path d="M6 12v5c3 3 9 3 12 0v-5"/>
+        </svg>
+        <h1>學生資訊查詢系統</h1>
+    </header>
+    
+    <div class="controls-container">
+        <!-- 查詢全部 -->
+        <div class="control-group">
+            <button id="btn-get-all">查詢全部</button>
+            <button id="btn-report" class="btn-report">產生統計報表</button>
+        </div>
+
+        <!-- 按ID查詢 -->
+        <div class="control-group">
+            <input type="text" id="input-id" placeholder="輸入學號 (例如: STU2026001)">
+            <button id="btn-get-by-id">按ID查詢</button>
+        </div>
+
+        <!-- 按年齡範圍查詢 -->
+        <div class="control-group">
+            <input type="number" id="input-age-min" placeholder="最小年齡">
+            <input type="number" id="input-age-max" placeholder="最大年齡">
+            <button id="btn-get-by-age">按年齡範圍查詢</button>
+        </div>
+
+        <!-- 條件查詢 -->
+        <div class="control-group">
+            <select id="select-field">
+                <option value="id">學號</option>
+                <option value="name">姓名</option>
+                <option value="age">年齡</option>
+                <option value="class">班級</option>
+                <option value="email">電子郵件</option>
+            </select>
+            <input type="text" id="input-field-val" placeholder="輸入查詢條件">
+            <button id="btn-get-by-field">條件查詢</button>
+        </div>
+    </div>
+
+    <div id="status-area" class="status-area"></div>
+
+    <div id="report-container" style="display:none;"></div>
+
+    <div class="table-container">
+        <table id="results-table">
+            <thead>
+                <tr>
+                    <th>學號</th>
+                    <th>姓名</th>
+                    <th>年齡</th>
+                    <th>班級</th>
+                    <th>電子郵件</th>
+                </tr>
+            </thead>
+            <tbody id="results-tbody">
+                <!-- Data will be injected here -->
+            </tbody>
+        </table>
+    </div>
+
+    <div class="pagination-container" id="pagination-container" style="display: none;">
+        <div class="pagination-controls">
+            <button id="btn-prev">上一頁</button>
+            <span id="page-info">第 1 頁 / 共 1 頁</span>
+            <button id="btn-next">下一頁</button>
+        </div>
+        <div class="pagination-size">
+            <select id="select-limit">
+                <option value="10">10 筆/頁</option>
+                <option value="20">20 筆/頁</option>
+                <option value="50">50 筆/頁</option>
+            </select>
+        </div>
+    </div>
+
+    <script src="index.js"></script>
+</body>
+</html>

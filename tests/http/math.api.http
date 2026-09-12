@@ -1,0 +1,28 @@
+@baseUrl=http://localhost:8888/math
+
+### 
+POST {{baseUrl}}/add_two_numbers HTTP/1.1
+Content-Type: application/json
+
+{"a":22,"b":21}
+
+
+### 
+POST {{baseUrl}}/subtract_two_numbers HTTP/1.1
+Content-Type: application/json
+
+{"a":22,"b":20}
+
+
+### 
+POST {{baseUrl}}/multiply_two_numbers HTTP/1.1
+Content-Type: application/json
+
+{"a":22,"b":20}
+
+
+### 
+POST {{baseUrl}}/divide_two_numbers HTTP/1.1
+Content-Type: application/json
+
+{"a":22,"b":20}

@@ -1,0 +1,11 @@
+{
+  "configurations": [
+    {
+      "name": "NodeWork",
+      "program": "${workspaceFolder}/index.js",
+      "request": "launch",
+      "skipFiles": ["<node_internals>/**"],
+      "type": "node"
+    }
+  ]
+}
