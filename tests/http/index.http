@@ -1,0 +1,15 @@
+@baseUrl=http://localhost:8822
+
+### With mismatch pathname
+GET {{baseUrl}}/something HTTP/1.1
+
+
+### Without a or b
+GET {{baseUrl}}/calculate?b=11 HTTP/1.1
+
+### With a or b as non-numeric
+GET {{baseUrl}}/calculate?a=1&b=sad HTTP/1.1
+
+
+### With correct params
+GET {{baseUrl}}/calculate?a=22&b=21 HTTP/1.1

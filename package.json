@@ -1,0 +1,12 @@
+{
+    "name": "simple-test",
+    "version": "1.0.0",
+    "description": "",
+    "main": "index.js",
+    "scripts": {
+        "start": "node --env-file=.env --watch index.js",
+        "test": "node --env-file=.env --test"
+    },
+    "keywords": [],
+    "type": "module"
+}
