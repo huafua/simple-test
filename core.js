@@ -5,6 +5,7 @@ import path from "path";
 
 /**
  * @typedef {IncomingMessage &{query:object,body:object}} MyRequest 請求
+ * @typedef {(req:MyRequest,res:ServerResponse)=>void} RouteCallback 路由回調
  */
 
 /**
@@ -18,6 +19,7 @@ class Server {
         this.routes = { GET: new Map() };
         this.server = createServer(this.handleRequest.bind(this));
         this.staticRoot = "public";
+        this.baseFolder = "routes";
     }
 
     /**
@@ -45,7 +47,7 @@ class Server {
     /**
      * 根據請求路徑獲取路由回調函數
      * @param {string} pathname 請求路徑
-     * @returns {(req:MyRequest,res:ServerResponse)=>void}
+     * @returns {RouteCallback}
      */
     getCallback(pathname) {
         return this.routes.GET.get(pathname) || this.notFound.bind(this);
@@ -96,6 +98,45 @@ class Server {
     }
 
     /**
+     *
+     * @param {string} folder
+     * @returns {Promise<{method:string,pathname:string,callback:RouteCallback}[]>}
+     */
+    async loadRoutes(folder) {
+        folder = folder || this.baseFolder;
+        let routes = [];
+        if (!fs.existsSync(folder)) return routes;
+        let files = fs.readdirSync(folder);
+
+        let filepaths = files.map((f) => path.join(folder, f));
+        for (let filepath of filepaths) {
+            let stats = fs.statSync(filepath);
+            if (stats.isDirectory()) {
+                routes = [...routes, ...(await this.loadRoutes(filepath))];
+                continue;
+            }
+            if (stats.isFile()) {
+                let method = path.basename(filepath).replace(/\.js$/g, "");
+                // 這裏先加載get路由
+                if (!"get".split(/\s+/).includes(method)) continue;
+                let module = await import("./" + filepath);
+                Object.entries(module).forEach((m) => {
+                    let [fname, callback] = m;
+                    routes.push({
+                        method,
+                        pathname: path
+                            .join(path.dirname(filepath), fname)
+                            .replace(/\\/g, "/")
+                            .replace(this.baseFolder, ""),
+                        callback: callback,
+                    });
+                });
+            }
+        }
+        return routes;
+    }
+
+    /**
      * 嘗試處理靜態資源
      * @param {string} pathname 請求路徑
      * @param {ServerResponse<IncomingMessage>} res 響應對象
@@ -135,11 +176,27 @@ class Server {
     /**
      * 啓動服務
      */
-    start() {
-        const PORT = process.env.PORT || 8822;
-        this.server.listen(PORT, () =>
-            console.log(`Server running at ${PORT}`),
-        );
+    async start() {
+        this.loadRoutes()
+            .then((routes) => {
+                routes.forEach((r) => this[r.method](r.pathname, r.callback));
+            })
+            .then(() => {
+                for (let method in this.routes) {
+                    for (let key of this.routes[method].keys()) {
+                        console.log("-", `[${method}]`, key);
+                    }
+                }
+                const PORT = process.env.PORT || 8822;
+                this.server.listen(PORT, () =>
+                    console.log(`Server running at ${PORT}`),
+                );
+            });
+    }
+
+    async getloadedRoutes() {
+        let result = await this.loadRoutes();
+        return result;
     }
 }
 
