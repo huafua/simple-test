@@ -71,6 +71,7 @@ class Server {
         const urlObject = new URL(req.url, `http://${req.headers.host}`);
         let query = Object.fromEntries(urlObject.searchParams.entries());
         req.query = query;
+        req.body = {};
         let chunks = Buffer.alloc(0);
         req.on("data", (chunk) => (chunks = Buffer.concat([chunks, chunk])));
         req.on("end", () => {
@@ -79,7 +80,7 @@ class Server {
             const bodyString = chunks.toString();
             if (contentType.includes("application/json")) {
                 try {
-                    req.body = JSON.parse(bodyString);
+                    req.body = Object.assign(req.body, JSON.parse(bodyString));
                 } catch (e) {
                     // 啥也別幹
                 }
@@ -94,7 +95,7 @@ class Server {
     /**
      * 嘗試處理靜態資源
      * @param {string} pathname 請求路徑
-     * @param {ServerResponse} res 響應對象
+     * @param {ServerResponse<IncomingMessage>} res 響應對象
      * @returns {Promise<string|boolean>}
      */
     tryStatic(pathname, res) {
@@ -120,7 +121,8 @@ class Server {
     handleRequest(req, res) {
         let urlObject = new URL(req.url, `http://${req.headers.host}`);
         let pathname = urlObject.pathname;
-        this.tryStatic(pathname, res).catch(() => {
+        this.tryStatic(pathname, res).catch((err) => {
+            console.log("static not applied:", err);
             this.assemblyRequest(req);
             let callback = this.getCallback(pathname);
             setTimeout(callback.bind(this, req, res));
@@ -175,7 +177,9 @@ server.get("/calculate", (req, res) => {
 });
 
 server.get("/data", (req, res) => {
-    const username = req.body.username || "Demo";
+    let username = "Demo";
+    if (Object.hasOwn(req.body, "username")) username = req.body.username;
+
     res.setHeader("content-type", "application/json");
     res.end(
         JSON.stringify({
