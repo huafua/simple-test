@@ -177,8 +177,7 @@ server.get("/calculate", (req, res) => {
 });
 
 server.get("/data", (req, res) => {
-    let username = "Demo";
-    if (Object.hasOwn(req.body, "username")) username = req.body.username;
+    const username = req.body.username || "Demo";
 
     res.setHeader("content-type", "application/json");
     res.end(
