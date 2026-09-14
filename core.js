@@ -11,8 +11,11 @@ import path from "path";
  * Server用以提供服務
  */
 class Server {
+    /**
+     * 構造函數
+     */
     constructor() {
-        this.routes = { GET: {} };
+        this.routes = { GET: new Map() };
         this.server = createServer(this.handleRequest.bind(this));
         this.staticRoot = "public";
     }
@@ -35,7 +38,7 @@ class Server {
                 "Callback must be a function receives request and response",
             );
         }
-        this.routes.GET[pathname] = callback;
+        this.routes.GET.set(pathname, callback);
         return this;
     }
 
@@ -45,7 +48,7 @@ class Server {
      * @returns {(req:MyRequest,res:ServerResponse)=>void}
      */
     getCallback(pathname) {
-        return this.routes.GET[pathname] || this.notFound.bind(this);
+        return this.routes.GET.get(pathname) || this.notFound.bind(this);
     }
 
     /**
@@ -167,43 +170,35 @@ server.get("/calculate", (req, res) => {
             }),
         );
     } catch (e) {
-        return res.end(
-            JSON.stringify({
-                success: false,
-                message: e.message,
-            }),
-        );
+        return res.end(JSON.stringify({ success: false, message: e.message }));
     }
 });
 
 server.get("/data", (req, res) => {
     const username = req.body.username || "Demo";
-
+    const data = {
+        message: `My name is ${username}`,
+    };
     res.setHeader("content-type", "application/json");
-    res.end(
-        JSON.stringify({
-            message: `My name is ${username}`,
-        }),
-    );
+    res.end(JSON.stringify(data));
 });
 
 export const tool = {
     async getData(username, { host = "localhost", port = 8822 } = {}) {
+        const headers = {
+            "content-type": "application/json",
+        };
         const response = await fetch(`http://${host}:${port}/data`, {
             method: "POST",
-            headers: {
-                "content-type": "application/json",
-            },
+            headers,
             body: JSON.stringify({ username }),
         });
-
         const result = await response.json();
         return result;
     },
     async calculate(a, b, { host = "localhost", port = 8822 } = {}) {
-        const response = await fetch(
-            `http://${host}:${port}/calculate?a=${a}&b=${b}`,
-        );
+        const url = `http://${host}:${port}/calculate?a=${a}&b=${b}`;
+        const response = await fetch(url);
         const result = await response.json();
         return result;
     },
