@@ -20,3 +20,19 @@ GET {{baseUrl}}/data HTTP/1.1
 Content-Type: application/json
 
 {"username":"Thomas"}
+
+### 
+GET {{baseUrl}}/calculator/add?a=110&b=2 HTTP/1.1
+
+###
+GET {{baseUrl}}/calculator/subtract?a=7&b=2 HTTP/1.1
+
+###
+GET {{baseUrl}}/calculator/multiply?a=1&b=2 HTTP/1.1
+
+###
+POST {{baseUrl}}/calculator/divide HTTP/1.1
+Content-Type: application/x-www-form-urlencoded
+Author: Your-All-Mighty-Father
+
+a=5&b=2

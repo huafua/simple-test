@@ -16,16 +16,17 @@ class Server {
      * 構造函數
      */
     constructor() {
-        this.routes = { GET: new Map() };
+        this.routes = { GET: new Map(), POST: new Map() };
         this.server = createServer(this.handleRequest.bind(this));
         this.staticRoot = "public";
-        this.baseFolder = "routes";
+        this.routeBaseFolder = "routes";
+        this.controllerBaseFolder = "controllers";
     }
 
     /**
      * 注冊GET路由
      * @param {string} pathname 請求路徑
-     * @param {(req:MyRequest,res:ServerResponse)=>void} callback 路由回調
+     * @param {RouteCallback} callback 路由回調
      * @returns {Server}
      */
     get(pathname, callback) {
@@ -44,13 +45,32 @@ class Server {
         return this;
     }
 
+    post(pathname, callback) {
+        if (!pathname || typeof pathname !== "string")
+            throw new Error("Pathname must be a non-empty string");
+        if (
+            !callback ||
+            typeof callback !== "function" ||
+            callback.length !== 2
+        ) {
+            throw new Error(
+                "Callback must be a function receives request and response",
+            );
+        }
+        this.routes.POST.set(pathname, callback);
+        return this;
+    }
+
     /**
      * 根據請求路徑獲取路由回調函數
-     * @param {string} pathname 請求路徑
+     * @param {MyRequest} req 請求對象
      * @returns {RouteCallback}
      */
-    getCallback(pathname) {
-        return this.routes.GET.get(pathname) || this.notFound.bind(this);
+    getCallback(req) {
+        const method = req.method;
+        const pathname = new URL(req.url, `http://${req.headers.host}`)
+            .pathname;
+        return this.routes[method].get(pathname) || this.notFound.bind(this);
     }
 
     /**
@@ -77,24 +97,32 @@ class Server {
         let query = Object.fromEntries(urlObject.searchParams.entries());
         req.query = query;
         req.body = {};
-        let chunks = Buffer.alloc(0);
-        req.on("data", (chunk) => (chunks = Buffer.concat([chunks, chunk])));
-        req.on("end", () => {
-            const contentType = req.headers["content-type"];
-            if (!contentType) return;
-            const bodyString = chunks.toString();
-            if (contentType.includes("application/json")) {
-                try {
-                    req.body = Object.assign(req.body, JSON.parse(bodyString));
-                } catch (e) {
-                    // 啥也別幹
+        if (req.method == "POST") {
+            let chunks = Buffer.alloc(0);
+            req.on(
+                "data",
+                (chunk) => (chunks = Buffer.concat([chunks, chunk])),
+            );
+            req.on("end", () => {
+                const contentType = req.headers["content-type"];
+                if (!contentType) return;
+                const bodyString = chunks.toString();
+                if (contentType.includes("application/json")) {
+                    try {
+                        req.body = Object.assign(
+                            req.body,
+                            JSON.parse(bodyString),
+                        );
+                    } catch (e) {
+                        // 啥也別幹
+                    }
+                } else if (
+                    contentType.includes("application/x-www-form-urlencoded")
+                ) {
+                    req.body = querystring.parse(bodyString);
                 }
-            } else if (
-                contentType.includes("application/x-www-form-urlencoded")
-            ) {
-                req.body = querystring.parse(bodyString);
-            }
-        });
+            });
+        }
     }
 
     /**
@@ -103,7 +131,7 @@ class Server {
      * @returns {Promise<{method:string,pathname:string,callback:RouteCallback}[]>} 結果
      */
     async loadRoutes(folder) {
-        folder = folder || this.baseFolder;
+        folder = folder || this.routeBaseFolder;
         let routes = [];
         if (!fs.existsSync(folder)) return routes;
         let files = fs.readdirSync(folder);
@@ -118,22 +146,63 @@ class Server {
             if (stats.isFile()) {
                 let method = path.basename(filepath).replace(/\.js$/g, "");
                 // 這裏先加載get路由
-                if (!"get".split(/\s+/).includes(method)) continue;
+                if (!"get post".split(/\s+/).includes(method)) continue;
                 let module = await import("./" + filepath);
-                Object.entries(module).forEach((m) => {
-                    let [fname, callback] = m;
+                Object.entries(module).forEach(([fname, callback]) => {
                     routes.push({
                         method,
                         pathname: path
                             .join(path.dirname(filepath), fname)
                             .replace(/\\/g, "/")
-                            .replace(this.baseFolder, ""),
+                            .replace(this.routeBaseFolder, ""),
                         callback: callback,
                     });
                 });
             }
         }
         return routes;
+    }
+
+    /**
+     * 從指定目錄加載工具
+     * @param {string} folder Controller根目錄
+     * @returns {Promise<{method:string,pathname:string,callback:(args:{[key:string]:any})=>any}[]>}
+     */
+    async loadControllers(folder) {
+        let controllers = [];
+        folder = folder || this.controllerBaseFolder;
+        let filepaths = fs
+            .readdirSync(folder)
+            .map((f) => path.join(folder, f.replace(/\\/g, "/")));
+        for (let filepath of filepaths) {
+            let stats = fs.statSync(filepath);
+            if (stats.isDirectory()) {
+                controllers = [
+                    ...controllers,
+                    ...(await this.loadControllers(filepath)),
+                ];
+            } else if (stats.isFile()) {
+                let method = path.basename(filepath).replace(/\.js$/g, "");
+                if (!"get post".split(/\s+/).includes(method)) continue;
+                let module = await import("./" + filepath);
+                Object.entries(module).forEach(([pathname, callback]) => {
+                    controllers.push({
+                        method,
+                        pathname: path
+                            .join(
+                                filepath
+                                    .replace(this.controllerBaseFolder, "")
+                                    .replace(path.basename(filepath), ""),
+
+                                pathname,
+                            )
+                            .replace(/\\/g, "/"),
+                        callback,
+                    });
+                });
+            }
+        }
+        return controllers;
     }
 
     /**
@@ -166,9 +235,8 @@ class Server {
         let urlObject = new URL(req.url, `http://${req.headers.host}`);
         let pathname = urlObject.pathname;
         this.tryStatic(pathname, res).catch((err) => {
-            console.log("static not applied:", err);
             this.assemblyRequest(req);
-            let callback = this.getCallback(pathname);
+            let callback = this.getCallback(req);
             setTimeout(callback.bind(this, req, res));
         });
     }
@@ -185,21 +253,38 @@ class Server {
         routeInfos.forEach((line) => console.log(line));
     }
 
+    async loadExtralRoutes() {
+        let [routes, controllers] = await Promise.all([
+            this.loadRoutes(),
+            this.loadControllers(),
+        ]);
+
+        routes.forEach((r) => this[r.method](r.pathname, r.callback));
+        controllers.forEach((c) => {
+            this[c.method](c.pathname, (req, res) => {
+                let data = c.method == "get" ? req.query : req.body;
+                res.setHeader("content-type", "application/json");
+                let result = null;
+                try {
+                    result = c.callback.call(this, data, req.headers);
+                    result = { code: 200, result };
+                } catch (e) {
+                    result = { code: 400, reason: e };
+                }
+                res.end(JSON.stringify(result));
+            });
+        });
+        this.printRoutesInfo();
+    }
     /**
      * 啓動服務
      */
     async start() {
-        this.loadRoutes()
-            .then((routes) => {
-                routes.forEach((r) => this[r.method](r.pathname, r.callback));
-                this.printRoutesInfo();
-            })
-            .then(() => {
-                const PORT = process.env.PORT || 8822;
-                this.server.listen(PORT, () =>
-                    console.log(`Server running at ${PORT}`),
-                );
-            });
+        await this.loadExtralRoutes();
+        const PORT = process.env.PORT || 8822;
+        this.server.listen(PORT, () => {
+            console.log(`Server running at ${PORT}`);
+        });
     }
 
     async getloadedRoutes() {
