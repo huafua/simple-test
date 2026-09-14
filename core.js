@@ -98,9 +98,9 @@ class Server {
     }
 
     /**
-     *
-     * @param {string} folder
-     * @returns {Promise<{method:string,pathname:string,callback:RouteCallback}[]>}
+     * 從指定目錄加載路由
+     * @param {string} folder 路由所在根目錄
+     * @returns {Promise<{method:string,pathname:string,callback:RouteCallback}[]>} 結果
      */
     async loadRoutes(folder) {
         folder = folder || this.baseFolder;
@@ -174,19 +174,27 @@ class Server {
     }
 
     /**
+     * 打印路由信息
+     */
+    printRoutesInfo() {
+        let routeInfos = [];
+        for (let method in this.routes)
+            for (let key of this.routes[method].keys())
+                routeInfos.push(`- [${method}] ${key}`);
+
+        routeInfos.forEach((line) => console.log(line));
+    }
+
+    /**
      * 啓動服務
      */
     async start() {
         this.loadRoutes()
             .then((routes) => {
                 routes.forEach((r) => this[r.method](r.pathname, r.callback));
+                this.printRoutesInfo();
             })
             .then(() => {
-                for (let method in this.routes) {
-                    for (let key of this.routes[method].keys()) {
-                        console.log("-", `[${method}]`, key);
-                    }
-                }
                 const PORT = process.env.PORT || 8822;
                 this.server.listen(PORT, () =>
                     console.log(`Server running at ${PORT}`),
