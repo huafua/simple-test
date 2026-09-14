@@ -8,19 +8,30 @@ import path from "path";
  * @typedef {(req:MyRequest,res:ServerResponse)=>void} RouteCallback 路由回調
  */
 
+const { STATIC_ROOT, ROUTE_BASE_FOLDER, CONTROLLER_BASE_FOLDER, PORT } =
+    process.env;
+
 /**
  * Server用以提供服務
  */
-class Server {
+export class Server {
     /**
      * 構造函數
+     * @param {object} config 配置項
+     * @param {string} config.staticRoot 配置項
+     * @param {string} config.routeBaseFolder 配置項
+     * @param {string} config.controllerBaseFolder 配置項
      */
-    constructor() {
+    constructor({
+        staticRoot = STATIC_ROOT || "public",
+        routeBaseFolder = ROUTE_BASE_FOLDER || "routes",
+        controllerBaseFolder = CONTROLLER_BASE_FOLDER || "controllers",
+    } = {}) {
         this.routes = { GET: new Map(), POST: new Map() };
         this.server = createServer(this.handleRequest.bind(this));
-        this.staticRoot = "public";
-        this.routeBaseFolder = "routes";
-        this.controllerBaseFolder = "controllers";
+        this.staticRoot = staticRoot;
+        this.routeBaseFolder = routeBaseFolder;
+        this.controllerBaseFolder = controllerBaseFolder;
     }
 
     /**
@@ -29,36 +40,37 @@ class Server {
      * @param {RouteCallback} callback 路由回調
      * @returns {Server}
      */
-    get(pathname, callback) {
-        if (!pathname || typeof pathname !== "string")
-            throw new Error("Pathname must be a non-empty string");
-        if (
-            !callback ||
-            typeof callback !== "function" ||
-            callback.length !== 2
-        ) {
-            throw new Error(
-                "Callback must be a function receives request and response",
-            );
-        }
-        this.routes.GET.set(pathname, callback);
-        return this;
-    }
+    get = this.createRouteRegister("GET");
 
-    post(pathname, callback) {
-        if (!pathname || typeof pathname !== "string")
-            throw new Error("Pathname must be a non-empty string");
-        if (
-            !callback ||
-            typeof callback !== "function" ||
-            callback.length !== 2
-        ) {
-            throw new Error(
-                "Callback must be a function receives request and response",
-            );
-        }
-        this.routes.POST.set(pathname, callback);
-        return this;
+    /**
+     * 注冊POST路由
+     * @param {string} pathname 請求路徑
+     * @param {RouteCallback} callback 路由回調
+     * @returns {Server}
+     */
+    post = this.createRouteRegister("POST");
+
+    /**
+     * 創建路由注冊器
+     * @param {"GET"|"POST"} method 請求方式
+     * @returns {(pathname:string,callback:RouteCallback)}
+     */
+    createRouteRegister(method) {
+        return (pathname, callback) => {
+            if (!pathname || typeof pathname !== "string")
+                throw new Error("Pathname must be a non-empty string");
+            if (
+                !callback ||
+                typeof callback !== "function" ||
+                callback.length !== 2
+            ) {
+                throw new Error(
+                    "Callback must be a function receives request and response",
+                );
+            }
+            this.routes[method].set(pathname, callback);
+            return this;
+        };
     }
 
     /**
@@ -264,12 +276,12 @@ class Server {
             this[c.method](c.pathname, (req, res) => {
                 let data = c.method == "get" ? req.query : req.body;
                 res.setHeader("content-type", "application/json");
-                let result = null;
+                let result = { code: 400 };
                 try {
                     result = c.callback.call(this, data, req.headers);
                     result = { code: 200, result };
                 } catch (e) {
-                    result = { code: 400, reason: e };
+                    result = Object.assign(result, { reason: e });
                 }
                 res.end(JSON.stringify(result));
             });
@@ -281,7 +293,6 @@ class Server {
      */
     async start() {
         await this.loadExtralRoutes();
-        const PORT = process.env.PORT || 8822;
         this.server.listen(PORT, () => {
             console.log(`Server running at ${PORT}`);
         });
