@@ -1,5 +1,7 @@
 import { createServer, IncomingMessage, ServerResponse } from "http";
 import querystring from "querystring";
+import fs from "fs";
+import path from "path";
 
 /**
  * @typedef {IncomingMessage &{query:object,body:object}} MyRequest 請求
@@ -12,6 +14,7 @@ class Server {
     constructor() {
         this.routes = { GET: {} };
         this.server = createServer(this.handleRequest.bind(this));
+        this.staticRoot = "public";
     }
 
     /**
@@ -89,6 +92,27 @@ class Server {
     }
 
     /**
+     * 嘗試處理靜態資源
+     * @param {string} pathname 請求路徑
+     * @param {ServerResponse} res 響應對象
+     * @returns {Promise<string|boolean>}
+     */
+    tryStatic(pathname, res) {
+        return new Promise((resolve, reject) => {
+            if (pathname == "/" || pathname == "")
+                return reject("It's not a static request");
+            let filepath = path.join(this.staticRoot, pathname.substring(1));
+            fs.stat(filepath, (err, stats) => {
+                if (err) return reject("Failed to tell filepath info");
+                if (!stats.isFile()) return reject("It's not a file");
+                res.setHeader("Author", "Your All Mighty Father");
+                fs.createReadStream(filepath).pipe(res);
+                resolve(true);
+            });
+        });
+    }
+
+    /**
      * 處理請求
      * @param {IncomingMessage} req 請求對象
      * @param {ServerResponse} res 響應對象
@@ -96,9 +120,11 @@ class Server {
     handleRequest(req, res) {
         let urlObject = new URL(req.url, `http://${req.headers.host}`);
         let pathname = urlObject.pathname;
-        this.assemblyRequest(req);
-        let callback = this.getCallback(pathname);
-        setTimeout(callback.bind(this, req, res));
+        this.tryStatic(pathname, res).catch(() => {
+            this.assemblyRequest(req);
+            let callback = this.getCallback(pathname);
+            setTimeout(callback.bind(this, req, res));
+        });
     }
 
     /**
